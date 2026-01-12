@@ -25,11 +25,41 @@
 
         function init() {
             var map = new ymaps.Map("map", {
-                center: [56.839448, 60.597636], // Москва
+                center: [56.839448, 60.597636],
                 zoom: 12
+            });
+
+            map.events.add('click', function (e) {
+                var coords = e.get('coords');
+                var lat = coords[0];
+                var lon = coords[1];
+
+                sendLocationToServer(lat, lon);
+            });
+        }
+
+        function sendLocationToServer(lat, lon) {
+            fetch('/api/location/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    lat: lat,
+                    lon: lon
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Ответ сервера:', data);
+                alert(`Координаты получены:\n${data.lat}, ${data.lon}`);
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
             });
         }
     </script>
+
 
 </body>
 </html>
