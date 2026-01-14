@@ -1,7 +1,8 @@
 from django.urls import path
-from .views import map_view, location_click_api
+from .views import map_view, location_click_api, place_details_api
 
 urlpatterns = [
-    path('', map_view, name='map'),
-    path('api/location/', location_click_api, name='location_api'),
+    path('', map_view),
+    path('api/location/', location_click_api),
+    path('api/place-details/', place_details_api),
 ]

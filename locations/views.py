@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from .services.google_places import search_organizations
+from .services.google_place_details import get_place_details
 from django.conf import settings
 
 def map_view(request):
@@ -27,3 +28,18 @@ def location_click_api(request):
         })
 
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+@csrf_exempt
+def place_details_api(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        place_id = data.get("place_id")
+
+        details = get_place_details(place_id)
+
+        return JsonResponse({
+            "status": "ok",
+            "details": details
+        })
+
+    return JsonResponse({"error": "Invalid request"}, status=400)
