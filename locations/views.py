@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from .services.google_places import search_organizations
 from .services.google_place_details import get_place_details
+from .services.visit_recommendation import get_visit_recommendation
 from django.conf import settings
 
 def map_view(request):
@@ -31,15 +32,28 @@ def location_click_api(request):
 
 @csrf_exempt
 def place_details_api(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        place_id = data.get("place_id")
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid method"}, status=405)
+
+    try:
+        body = json.loads(request.body)
+        place_id = body.get("place_id")
+
+        if not place_id:
+            return JsonResponse({"error": "place_id is required"}, status=400)
 
         details = get_place_details(place_id)
 
+        recommendation = get_visit_recommendation(details)
+
         return JsonResponse({
             "status": "ok",
-            "details": details
+            "details": details,
+            "recommendation": recommendation
         })
 
-    return JsonResponse({"error": "Invalid request"}, status=400)
+    except Exception as e:
+        return JsonResponse(
+            {"error": "Internal server error", "details": str(e)},
+            status=500
+        )
