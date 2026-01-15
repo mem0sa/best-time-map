@@ -21,88 +21,143 @@
     defer
     ></script>
 <body>
-<div id="details" style="
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    background: white;
-    padding: 15px;
-    max-width: 300px;
-    z-index: 1000;
-    display: none;
-"></div>
-<div id="map"></div>
+    <div id="details" style="
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        background: white;
+        padding: 15px;
+        max-width: 300px;
+        z-index: 1000;
+        display: none;
+    "></div>
+
+    <div id="recommendation-panel" style="
+        margin-top: 15px;
+        padding: 10px;
+        border-top: 1px solid #ccc;
+    ">
+    </div>
+
+    <div id="map"></div>
+
     <script>
-    let map;
-    let activePlaceId = null;
+        let map;
+        let activePlaceId = null;
 
-    function initMap() {
-        map = new google.maps.Map(document.getElementById("map"), {
-            center: { lat: 55.751244, lng: 37.618423 },
-            zoom: 14,
-        });
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 55.751244, lng: 37.618423 },
+                zoom: 14,
+            });
 
-        map.addListener("click", (event) => {
-            if (event.placeId) {
-                event.stop();
-                handlePlaceClick(event.placeId);
-            }
-        });
-    }
-
-    function handlePlaceClick(placeId) {
-        if (activePlaceId === placeId) {
-            return;
+            map.addListener("click", (event) => {
+                if (event.placeId) {
+                    event.stop();
+                    handlePlaceClick(event.placeId);
+                }
+            });
         }
 
-        closeDetailsPanel();
-        activePlaceId = placeId;
+        function handlePlaceClick(placeId) {
+            if (activePlaceId === placeId) {
+                return;
+            }
 
-        fetch('/api/place-details/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ place_id: placeId })
-        })
-        .then(res => res.json())
-        .then(data => {
-            showPlaceDetails(data.details);
-        })
-        .catch(() => {
-            activePlaceId = null;
-        });
-    }
+            closeDetailsPanel();
+            activePlaceId = placeId;
 
-    function fetchPlaceDetails(placeId) {
-        fetch('/api/place-details/', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ place_id: placeId })
-        })
-        .then(res => res.json())
-        .then(data => {
-            showPlaceDetails(data.details);
-        });
-    }
+            fetch('/api/place-details/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ place_id: placeId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                showPlaceDetails(data.details);
+                showRecommendation(data.recommendation);
+            })
+            .catch(() => {
+                activePlaceId = null;
+            });
+        }
 
-    function showPlaceDetails(details) {
-        const panel = document.getElementById("details");
+        function fetchPlaceDetails(placeId) {
+            fetch('/api/place-details/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ place_id: placeId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                showPlaceDetails(data.details);
+                showRecommendation(data.recommendation);
+            });
+        }
 
-        panel.innerHTML = `
-            <button onclick="closeDetailsPanel()" style="float:right;">×</button>
-            <h3>${details.name}</h3>
-            <p>${details.address}</p>
-            <p><strong>Рейтинг:</strong> ${details.rating ?? '—'}</p>
-        `;
+        function showPlaceDetails(details) {
+            const panel = document.getElementById("details");
 
-        panel.style.display = "block";
-    }
+            panel.innerHTML = `
+                <button onclick="closeDetailsPanel()" style="float:right;">×</button>
+                <h3>${details.name}</h3>
+                <p>${details.address}</p>
+                <p><strong>Рейтинг:</strong> ${details.rating ?? '—'}</p>
+            `;
 
-    function closeDetailsPanel() {
-    const panel = document.getElementById("details");
+            panel.style.display = "block";
+        }
 
-    panel.style.display = "none";
-    panel.innerHTML = "";
-    }
+        function closeDetailsPanel() {
+            const panel = document.getElementById("details");
+
+            panel.style.display = "none";
+            panel.innerHTML = "";
+        }
+
+        function getLoadColor(score) {
+            if (score <= 40) return "#b6e7a7";
+            if (score <= 70) return "#fff3b0"; 
+            return "#f4b6b6";      
+        }
+
+        function showRecommendation(rec) {
+            const panel = document.getElementById("recommendation-panel");
+
+            let html = `
+                <h4>Рекомендации по дням недели</h4>
+                <table style="width:100%; border-collapse: collapse;">
+                    <tr>
+                        <th align="left">День</th>
+                        <th align="left">Рекомендуемое время</th>
+                        <th align="left">Загруженность</th>
+                    </tr>
+            `;
+
+            for (const day in rec.weekly_recommendations) {
+                const item = rec.weekly_recommendations[day];
+                const color = getLoadColor(item.load_score);
+
+                html += `
+                    <tr style="background:${color}">
+                        <td>${day}</td>
+                        <td>${item.time}</td>
+                        <td>${item.load_score}</td>
+                    </tr>
+                `;
+            }
+
+            html += `</table>`;
+
+            html += `
+                <p style="margin-top:10px;">
+                    <strong>Лучший день:</strong>
+                    ${rec.best_day.day} (${rec.best_day.time})
+                </p>
+            `;
+
+            panel.innerHTML = html;
+        }
     </script>
 </body>
 </html>
