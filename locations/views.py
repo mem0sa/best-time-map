@@ -12,7 +12,6 @@ def map_view(request):
         'GOOGLE_MAPS_API_KEY': settings.GOOGLE_MAPS_API_KEY
     })
 
-
 @csrf_exempt
 def location_click_api(request):
     if request.method == 'POST':
@@ -45,7 +44,7 @@ def place_details_api(request):
         details = get_place_details(place_id)
 
         recommendation = get_visit_recommendation(details)
-
+        
         return JsonResponse({
             "status": "ok",
             "details": details,

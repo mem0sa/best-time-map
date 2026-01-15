@@ -1,25 +1,15 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Лучшее время посещения</title>
-    <style>
-        html, body {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-        }
-        #map {
-            width: 100%;
-            height: 100%;
-        }
-    </style>
     <script
     src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&libraries=places&callback=initMap"
     async
     defer
     ></script>
+    <link rel="stylesheet" href="{% static 'locations/css/style.css' %}">
 <body>
     <div id="details" style="
         position: absolute;
@@ -47,7 +37,7 @@
 
         function initMap() {
             map = new google.maps.Map(document.getElementById("map"), {
-                center: { lat: 55.751244, lng: 37.618423 },
+                center: { lat:56.839448, lng:60.597636 },
                 zoom: 14,
             });
 
@@ -82,19 +72,6 @@
             });
         }
 
-        function fetchPlaceDetails(placeId) {
-            fetch('/api/place-details/', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ place_id: placeId })
-            })
-            .then(res => res.json())
-            .then(data => {
-                showPlaceDetails(data.details);
-                showRecommendation(data.recommendation);
-            });
-        }
-
         function showPlaceDetails(details) {
             const panel = document.getElementById("details");
 
@@ -115,49 +92,70 @@
             panel.innerHTML = "";
         }
 
-        function getLoadColor(score) {
-            if (score <= 40) return "#b6e7a7";
-            if (score <= 70) return "#fff3b0"; 
-            return "#f4b6b6";      
+        function getColorRelative(score, min, max) {
+            const ratio = (score - min) / (max - min);
+            const r = Math.floor(ratio * 255);
+            const g = Math.floor((1 - ratio) * 255);
+            const b = 0;
+            return `rgb(${r},${g},${b})`;
         }
 
-        function showRecommendation(rec) {
+        function showRecommendation(data) {
             const panel = document.getElementById("recommendation-panel");
+            const heatmap = data.table;
+            const best = data.best_time;
+            const worst = data.worst_time;
 
-            let html = `
-                <h4>Рекомендации по дням недели</h4>
-                <table style="width:100%; border-collapse: collapse;">
-                    <tr>
-                        <th align="left">День</th>
-                        <th align="left">Рекомендуемое время</th>
-                        <th align="left">Загруженность</th>
-                    </tr>
-            `;
+            const days = [
+                "Понедельник",
+                "Вторник",
+                "Среда",
+                "Четверг",
+                "Пятница",
+                "Суббота",
+                "Воскресенье"
+            ];
 
-            for (const day in rec.weekly_recommendations) {
-                const item = rec.weekly_recommendations[day];
-                const color = getLoadColor(item.load_score);
+            let html = `<h4>Тепловая карта посещаемости</h4>`;
+            html += `<table class="heatmap-table">`;
 
-                html += `
-                    <tr style="background:${color}">
-                        <td>${day}</td>
-                        <td>${item.time}</td>
-                        <td>${item.load_score}</td>
-                    </tr>
-                `;
+            html += `<tr><th></th>`;
+            days.forEach(day => html += `<th>${day}</th>`);
+            html += `</tr>`;
+
+            for (const hourLabel in heatmap) {
+                const hourNumber = parseInt(hourLabel);
+
+                html += `<tr>`;
+                html += `<td class="hour-cell">${hourLabel}</td>`;
+
+                days.forEach(day => {
+                    const score = heatmap[hourLabel][day];
+
+                    const color = getColorRelative(score, best["score"], worst["score"]);
+
+                    const isBest =
+                        best.day === day && best.hour === hourNumber
+                            ? "best-cell"
+                            : "";
+
+                    html += `<td class="${isBest}" style="background-color: ${color}; color: ${score > 50 ? '#fff' : '#000'}">${score}</td>`;
+                });
+
+                html += `</tr>`;
             }
 
             html += `</table>`;
 
             html += `
-                <p style="margin-top:10px;">
-                    <strong>Лучший день:</strong>
-                    ${rec.best_day.day} (${rec.best_day.time})
-                </p>
+                <div class="best-day">
+                    Лучшее время: ${best.day}, ${best.hour}:00
+                </div>
             `;
 
             panel.innerHTML = html;
         }
     </script>
+    <link rel="stylesheet" href="{% static 'locations/css/style.css' %}">
 </body>
 </html>

@@ -1,7 +1,16 @@
+import random
+
 DAY_NAMES = [
-    "Monday", "Tuesday", "Wednesday",
-    "Thursday", "Friday", "Saturday", "Sunday"
+    "Понедельник",
+    "Вторник",
+    "Среда",
+    "Четверг",
+    "Пятница",
+    "Суббота",
+    "Воскресенье",
 ]
+
+HOURS = list(range(9, 22))
 
 TYPE_WEIGHTS = {
     "restaurant": 0.9,
@@ -12,11 +21,38 @@ TYPE_WEIGHTS = {
     "post_office": 0.5,
 }
 
-W_REVIEWS = 0.35
-W_RATING = 0.25
-W_DAY = 0.25
-W_TYPE = 0.15
+DAY_FACTORS = {
+    "Понедельник": 0.5,
+    "Вторник": 0.5,
+    "Среда": 0.5,
+    "Четверг": 0.5,
+    "Пятница": 0.7,
+    "Суббота": 1,
+    "Воскресенье": 0.9,
+}
 
+HOUR_FACTORS = {
+    9: 0.25,
+    10: 0.25,
+    11: 0.35,
+    12: 0.7,
+    13: 0.8,
+    14: 0.6,
+    15: 0.45,
+    16: 0.5,
+    17: 0.7,
+    18: 0.9,
+    19: 1.0,
+    20: 0.8,
+    21: 0.7,
+}
+
+W_REVIEWS = 0.30
+W_RATING = 0.20
+W_DAY = 0.20
+W_TYPE = 0.15
+W_HOUR = 0.1
+W_RANDOM = 0.05
 
 def normalize_reviews(reviews):
     return min(reviews / 1000, 1)
@@ -40,16 +76,7 @@ def type_factor(types):
             return TYPE_WEIGHTS[t]
     return 0.6
 
-
-def choose_time_range(day, types):
-    if day in ["Saturday", "Sunday"]:
-        return "11:00–13:00"
-    if "restaurant" in types or "cafe" in types:
-        return "14:00–16:00"
-    return "10:00–12:00"
-
-
-def calculate_load_score(day, details):
+def calculate_load_score(day, details, hour):
     reviews = details.get("reviews_count", 0)
     rating = details.get("rating", 0)
     types = details.get("types", [])
@@ -57,34 +84,47 @@ def calculate_load_score(day, details):
     score = (
         W_REVIEWS * normalize_reviews(reviews) +
         W_RATING * normalize_rating(rating) +
-        W_DAY * day_factor(day) +
-        W_TYPE * type_factor(types)
+        W_DAY * DAY_FACTORS[day] +
+        W_TYPE * type_factor(types) + 
+        W_HOUR * HOUR_FACTORS[hour] + 
+        W_RANDOM * random.random()
     )
 
     return round(score * 100, 1)
 
 
 def get_visit_recommendation(details):
-    weekly = {}
-    loads = {}
+    table = {}
+    best_time = {
+        "day": None,
+        "hour": None,
+        "score": float("inf"),
+    }
+    worst_time = {"score": float("-inf")}
+    
+    for hour in HOURS:
+        hour_label = f"{hour}:00"
+        table[hour_label] = {}
 
-    for day in DAY_NAMES:
-        score = calculate_load_score(day, details)
-        loads[day] = score
-        weekly[day] = {
-            "time": choose_time_range(day, details.get("types", [])),
-            "load_score": score
-        }
+        for day in DAY_NAMES:
+            score = calculate_load_score(day, details, hour)
 
-    best_day = min(loads, key=loads.get)
+            table[hour_label][day] = score
+
+            if score < best_time["score"]:
+                best_time = {
+                    "day": day,
+                    "hour": hour,
+                    "score": score,
+                }
+            if score > worst_time["score"]:
+                worst_time = {
+                    "score": score
+                }
 
     return {
-        "weekly_recommendations": weekly,
-        "best_day": {
-            "day": best_day,
-            "time": weekly[best_day]["time"],
-            "load_score": weekly[best_day]["load_score"],
-            "reason": "Минимальный расчётный уровень загруженности",
-        },
-        "data_source": "calculated",
+        "table": table,
+        "best_time": best_time,
+        "worst_time": worst_time
     }
+
