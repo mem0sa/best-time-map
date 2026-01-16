@@ -77,29 +77,21 @@ function showRecommendation(data) {
     html += `</tr>`;
 
     for (const hourLabel in heatmap) {
-        const hourNumber = parseInt(hourLabel);
-
         html += `<tr>`;
         html += `<td class="hour-cell">${hourLabel}</td>`;
-
+        
         days.forEach(day => {
             const score = heatmap[hourLabel][day];
-
             const color = getColorRelative(score, best["score"], worst["score"]);
-
             const isBest =
                 score < (best["score"] + 3) || ((day == "Суббота" || day == "Воскресенье") && score < (best_weekends["score"] + 2))
                     ? "best-cell"
                     : "";
-
             html += `<td class="${isBest}" style="background-color: ${color}; color: ${score > 50 ? '#fff' : '#000'}">${score}</td>`;
         });
-
         html += `</tr>`;
     }
-
     html += `</table>`;
-
     html += `
         <div class="best-day">
             Лучшее время: ${best.day}, ${best.hour}:00
