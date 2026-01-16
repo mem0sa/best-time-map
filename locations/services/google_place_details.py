@@ -8,6 +8,7 @@ def get_place_details(place_id):
     params = {
         "key": settings.GOOGLE_MAPS_API_KEY,
         "place_id": place_id,
+        "language":"ru",
         "fields": (
             "name,"
             "rating,"
