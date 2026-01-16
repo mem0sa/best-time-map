@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <title>Лучшее время посещения</title>
     <script
-    src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&libraries=places&callback=initMap"
-    async
-    defer
+        src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&libraries=places&callback=initMap"
+        async
+        defer
     ></script>
     <link rel="stylesheet" href="{% static 'locations/css/style.css' %}">
 <body>
@@ -22,14 +22,11 @@
         display: none;
     "></div>
 
-    <div id="recommendation-panel" style="
-        margin-top: 15px;
-        padding: 10px;
-        border-top: 1px solid #ccc;
-    ">
-    </div>
 
+        <div class="recommendation-panel"></div>
     <div id="map"></div>
+
+
 
     <script>
         let map;
@@ -50,10 +47,6 @@
         }
 
         function handlePlaceClick(placeId) {
-            if (activePlaceId === placeId) {
-                return;
-            }
-
             closeDetailsPanel();
             activePlaceId = placeId;
 
@@ -101,10 +94,11 @@
         }
 
         function showRecommendation(data) {
-            const panel = document.getElementById("recommendation-panel");
+            const panel = document.querySelector(".recommendation-panel");
             const heatmap = data.table;
             const best = data.best_time;
             const worst = data.worst_time;
+            const best_weekends = data.best_time_on_weekends;
 
             const days = [
                 "Понедельник",
@@ -118,7 +112,7 @@
 
             let html = `<h4>Тепловая карта посещаемости</h4>`;
             html += `<table class="heatmap-table">`;
-
+            html += `<button onclick="closeRecommendation()" style="float:right;">×</button>`
             html += `<tr><th></th>`;
             days.forEach(day => html += `<th>${day}</th>`);
             html += `</tr>`;
@@ -135,7 +129,7 @@
                     const color = getColorRelative(score, best["score"], worst["score"]);
 
                     const isBest =
-                        best.day === day && best.hour === hourNumber
+                        score < (best["score"] + 3) || ((day == "Суббота" || day == "Воскресенье") && score < (best_weekends["score"] + 2))
                             ? "best-cell"
                             : "";
 
@@ -151,11 +145,19 @@
                 <div class="best-day">
                     Лучшее время: ${best.day}, ${best.hour}:00
                 </div>
+                <div class="best-day">
+                    Лучшее время на выходных: ${best_weekends.day}, ${best_weekends.hour}:00
+                </div>
             `;
 
             panel.innerHTML = html;
+            panel.classList.add("open");
+        }
+
+        function closeRecommendation(){
+            const panel = document.querySelector(".recommendation-panel");
+            panel.classList.remove("open");
         }
     </script>
-    <link rel="stylesheet" href="{% static 'locations/css/style.css' %}">
 </body>
 </html>

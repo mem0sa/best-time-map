@@ -51,8 +51,8 @@ W_REVIEWS = 0.30
 W_RATING = 0.20
 W_DAY = 0.20
 W_TYPE = 0.15
-W_HOUR = 0.1
-W_RANDOM = 0.05
+W_HOUR = 0.11
+W_RANDOM = 0.04
 
 def normalize_reviews(reviews):
     return min(reviews / 1000, 1)
@@ -101,6 +101,7 @@ def get_visit_recommendation(details):
         "score": float("inf"),
     }
     worst_time = {"score": float("-inf")}
+    best_time_on_weekends = {"score": float("inf")}
     
     for hour in HOURS:
         hour_label = f"{hour}:00"
@@ -117,6 +118,12 @@ def get_visit_recommendation(details):
                     "hour": hour,
                     "score": score,
                 }
+            if score < best_time_on_weekends["score"] and day in ["Суббота", "Воскресенье"]:
+                best_time_on_weekends = {
+                    "day": day,
+                    "hour": hour,
+                    "score": score
+                }
             if score > worst_time["score"]:
                 worst_time = {
                     "score": score
@@ -125,6 +132,7 @@ def get_visit_recommendation(details):
     return {
         "table": table,
         "best_time": best_time,
-        "worst_time": worst_time
+        "worst_time": worst_time,
+        'best_time_on_weekends': best_time_on_weekends
     }
 

@@ -9,6 +9,7 @@ html, body {
 #map {
     width: 100vw;
     height: 100vh;
+    z-index: 100;
 }
 
 #details {
@@ -36,39 +37,38 @@ html, body {
     cursor: pointer;
 }
 
-#recommendation-panel {
-    margin-top: 15px;
-    border-top: 1px solid #ddd;
-    padding-top: 10px;
+.recommendation-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 600px;
+    background-color: #f1f1f1;
+    z-index: 500;
+    transform: translateY(100%); 
+    transition: transform 0.5s ease-out;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
 }
 
-#recommendation-panel table {
+.open {
+    transform: translateY(0);
+}
+
+.recommendation-panel table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
     font-size: 14px;
 }
 
-#recommendation-panel th,
-#recommendation-panel td {
+.recommendation-panel th,
+.recommendation-panel td {
     padding: 6px 8px;
     text-align: left;
 }
 
-#recommendation-panel th {
+.recommendation-panel th {
     background: #f5f5f5;
-}
-
-.load-low {
-    background-color: #d7f3d2;
-}
-
-.load-medium {
-    background-color: #fff4cc;
-}
-
-.load-high {
-    background-color: #f8d7da;
 }
 
 .best-day {
@@ -85,7 +85,6 @@ html, body {
 }
 
 .best-cell {
-    background-color: #0dff00 !important;
     color: white;
     font-size: 16px;
     border: 1px solid black;
